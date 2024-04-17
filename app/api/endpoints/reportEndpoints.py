@@ -1,14 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Header
 from app.services.reportService import ReportService as ReportServiceClass
 from fastapi.responses import StreamingResponse
 import io
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter()
+def verifyApiKey(apikey:str = Header(...)):
+  if apikey !=  os.getenv("API_KEY"):
+    raise HTTPException(status_code= 401, detail="Unauthorized")
 
 def get_report_service():
   return ReportServiceClass()
 
-@router.get("/generate-daily-report/", response_class=Response, responses={
+@router.get("/generate-daily-report/", dependencies=[Depends(verifyApiKey)], response_class=Response, responses={
   200: {
     "description": "Returns the daily report as a PDF",
     "content": {"application/pdf": {}}

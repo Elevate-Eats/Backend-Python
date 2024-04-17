@@ -24,9 +24,9 @@ class ReportRepository:
           port=self.db_port,
           database=self.db_database
       )
-      logging.info("Connected to PostgreSQL")
+      # logging.info("Connected to PostgreSQL")
     except Exception as e:
-      logging.error(f"Failed to connect to PostgreSQL: {e}")
+      # logging.error(f"Failed to connect to PostgreSQL: {e}")
       raise
 
   async def close(self):
@@ -36,7 +36,7 @@ class ReportRepository:
     try:
       await self.connect()
       naive_datetime = datetime.fromisoformat(date[:-1])  # Removing the 'Z' assuming date is in UTC
-      logging.info(f"Fetching data for Branch ID: {branchId} on Date: {date}")
+      # logging.info(f"Fetching data for Branch ID: {branchId} on Date: {date}")
       timezone = pytz.timezone("Asia/Jakarta")  # Example: Use your database's timezone
       aware_datetime = naive_datetime.replace(tzinfo=pytz.utc).astimezone(timezone)
       date_only = aware_datetime.date()  
@@ -46,15 +46,15 @@ class ReportRepository:
           WHERE b.id = $1
           """
       companyName = await self.connection.fetchval(companyQuery, branchId)
-      logging.info(f"Company Name: {companyName}")
+      # logging.info(f"Company Name: {companyName}")
 
       branchNameQuery = "SELECT name from branches where id = $1"
       branchName = await self.connection.fetchval(branchNameQuery, branchId)
-      logging.info(f"Branch Name: {branchName}")
+      # logging.info(f"Branch Name: {branchName}")
 
       dailyAnalyticsQuery = "SELECT * FROM dailyanalytics WHERE branchid = $1 AND date = $2"
       dailyResults = await self.connection.fetch(dailyAnalyticsQuery, branchId, date_only)
-      logging.info(f"Daily Analytics Results: {dailyResults}")
+      # logging.info(f"Daily Analytics Results: {dailyResults}")
 
       itemAnalyticsQuery= """
           SELECT m.name, dai.menuid, dai.numberofitemssold as sold, dai.totalsales as revenue
@@ -64,7 +64,7 @@ class ReportRepository:
           ORDER BY dai.numberofitemssold DESC
           """
       itemResultsRaw = await self.connection.fetch(itemAnalyticsQuery, branchId, date_only)
-      logging.info(f"Fetched {len(itemResultsRaw)} items from dailyitemanalytics")
+      # logging.info(f"Fetched {len(itemResultsRaw)} items from dailyitemanalytics")
 
       itemResults = [{
           'name': result['name'],
@@ -80,5 +80,5 @@ class ReportRepository:
         "dailyItemsAnalytics": itemResults,
       }
     except Exception as e:
-      logging.error(f"Failed to fetch data: {e}")
+      # logging.error(f"Failed to fetch data: {e}")
       raise
