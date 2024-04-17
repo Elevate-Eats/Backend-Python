@@ -9,6 +9,6 @@ RUN apk add --no-cache postgresql-libs && \
     pip install --no-cache-dir -r req.txt && \
     apk --purge del .build-deps
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["uvicorn", "--host", "0.0.0.0", "main:app"]
+CMD ["uvicorn", "--host", "0.0.0.0","--port","8080", "main:app"]
