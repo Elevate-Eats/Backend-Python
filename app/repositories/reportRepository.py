@@ -71,13 +71,33 @@ class ReportRepository:
           'sold': result['sold'],
           'revenue': float(result['revenue'])
       } for result in itemResultsRaw]
-
+      
+      transactionDataQuery ="""
+        SELECT
+            to_char(transactiondate, 'HH12:MI PM') as time,
+            totalprice,
+            paymentmethod,
+            customername,
+            discount
+        FROM transactions
+        WHERE branchid = $1 AND date(transactiondate) = $2
+        ORDER BY transactiondate
+      """
+      transactionDataRaw = await self.connection.fetch(transactionDataQuery, branchId, date_only)
+      transactionData = [{
+        'time': result['time'],
+        'total': float(result['totalprice']),
+        'paymentMethod': result['paymentmethod'],
+        'customerName': result['customername'],
+        'discount': float(result['discount']) if result['discount'] else None
+      } for result in transactionDataRaw]
       await self.close()
       return {
         "companyName": companyName,
         "branchName": branchName,
         "dailyanalytics": dailyResults,
         "dailyItemsAnalytics": itemResults,
+        "transactionData": transactionData,
       }
     except Exception as e:
       # logging.error(f"Failed to fetch data: {e}")

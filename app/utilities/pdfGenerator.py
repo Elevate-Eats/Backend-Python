@@ -23,12 +23,12 @@ class PDFGenerator:
       dailyResults = data["dailyanalytics"][0] if data["dailyanalytics"] else None
       if not dailyResults:
         raise ValueError("No daily analytics data available")
-      
       date = dailyResults['date'].isoformat() if isinstance(dailyResults['date'], datetime) else dailyResults['date']
       totalRevenue = dailyResults['totalsales']
       totalTransactions = dailyResults['numberoftransactions']
       totalItemsSold = dailyResults['numberofitemssold']
       itemsData = data["dailyItemsAnalytics"]
+      transactionsData = data["transactionData"]
       font_paths = [
         'app/utilities/fonts/Montserrat-Regular.ttf',
         'app/utilities/fonts/Montserrat-Bold.ttf',
@@ -60,7 +60,11 @@ class PDFGenerator:
       elements.append(Paragraph(companyName.upper(), title_style))
       elements.append(Paragraph(f"Daily Report - {branchName}", header_style))
       elements.append(Paragraph(f"Date: {date}", subheader_style))
-
+      
+      
+      
+      elements.append(Spacer(1, 24))
+      elements.append(Paragraph(f"Daily Summary", header_style))
       # Summary Table
       summary_data = [["Total Revenue (IDR)", "Total Transactions", "Total Items Sold"], [f"{totalRevenue:,.2f}", totalTransactions, totalItemsSold]]
       summary_table = Table(summary_data, colWidths=[2.2*inch, 2.2*inch, 2.2*inch], hAlign='CENTER')
@@ -74,10 +78,10 @@ class PDFGenerator:
           ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
           ('GRID', (0, 0), (-1, -1), 1, colors.black),
       ]))
-      elements.append(Spacer(1, 24))
       elements.append(summary_table)
       elements.append(Spacer(1, 24))
-
+      
+      elements.append(Paragraph(f"Item Performance Chart", header_style))
       # Chart
       chart_buffer = io.BytesIO()
       fig, ax = plt.subplots(figsize=(6, 0.5 * len(itemsData)))
@@ -99,7 +103,7 @@ class PDFGenerator:
       elements.append(Paragraph(companyName.upper(), title_style))
       elements.append(Paragraph(f"Daily Report - {branchName}", header_style))
       elements.append(Paragraph(f"Date: {date}", subheader_style))
-      elements.append(Spacer(1, 12))
+      elements.append(Spacer(1, 24))
 
       # Detailed items table with improved style
       item_data_for_table = [
@@ -124,8 +128,38 @@ class PDFGenerator:
           ('BOX', (0, 0), (-1, -1), 1, colors.black),
           ('INNERGRID', (0, 0), (-1, -1), 1, colors.black),
       ]))
+      elements.append(Paragraph(f"Item Performance Chart", header_style))
       elements.append(detailed_item_table)
-
+      elements.append(PageBreak())
+      # Repeat headers on new page for consistency
+      elements.append(Paragraph(companyName.upper(), title_style))
+      elements.append(Paragraph(f"Daily Report - {branchName}", header_style))
+      elements.append(Paragraph(f"Date: {date}", subheader_style))
+      elements.append(Spacer(1, 24))
+      transactions_data_for_table = [
+        ['Time', 'Customer Name','Payment Method', 'Discount', 'Total'],  # Adding column headers here
+        ] + [
+        [transaction['time'], transaction['customerName'],transaction['paymentMethod'], transaction['discount'], f"{transaction['total']:,.2f}"] for transaction in transactionsData
+        ]
+      detailed_transaction_table = Table(
+          transactions_data_for_table,
+          colWidths=[1.2*inch, 1.5*inch, 1.5*inch, 1.5*inch],
+          hAlign='CENTER'
+      )
+      detailed_transaction_table.setStyle(TableStyle([
+          ('BACKGROUND', (0, 0), (-1, 0), colors.navy),
+          ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+          ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+          ('FONTNAME', (0, 0), (-1, 0), 'Montserrat-Bold'),
+          ('FONTNAME', (0, 1), (-1, -1), 'Montserrat-SemiBold'),
+          ('FONTSIZE', (0, 0), (-1, -1), 10),
+          ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+          ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+          ('BOX', (0, 0), (-1, -1), 1, colors.black),
+          ('INNERGRID', (0, 0), (-1, -1), 1, colors.black),
+      ]))
+      elements.append(Paragraph(f"Daily Transactions", header_style))
+      elements.append(detailed_transaction_table)
       # Build the PDF and return the binary data
       doc.build(elements)
       pdf_value = buffer.getvalue()
