@@ -35,9 +35,9 @@ class ReportRepository:
   async def getDailyReportData(self, branchId:int, date:str):
     try:
       await self.connect()
-      naive_datetime = datetime.fromisoformat(date[:-1])  # Removing the 'Z' assuming date is in UTC
+      naive_datetime = datetime.fromisoformat(date[:-1])
       # logging.info(f"Fetching data for Branch ID: {branchId} on Date: {date}")
-      timezone = pytz.timezone("Asia/Jakarta")  # Example: Use your database's timezone
+      timezone = pytz.timezone("Asia/Jakarta") 
       aware_datetime = naive_datetime.replace(tzinfo=pytz.utc).astimezone(timezone)
       date_only = aware_datetime.date()  
       companyQuery = """
@@ -55,7 +55,11 @@ class ReportRepository:
       dailyAnalyticsQuery = "SELECT * FROM dailyanalytics WHERE branchid = $1 AND date = $2"
       dailyResults = await self.connection.fetch(dailyAnalyticsQuery, branchId, date_only)
       # logging.info(f"Daily Analytics Results: {dailyResults}")
-
+      # Fetch Daily Expenses
+      dailyExpensesQuery = "Select * FROM expenses where branchid = $1 AND date = $2"
+      expensesResults = await self.connection.fetch(dailyExpensesQuery, branchId, date_only)
+      #logging.info(f"Daily Expenses Results: {expensesResults}")
+      
       itemAnalyticsQuery= """
           SELECT m.name, dai.menuid, dai.numberofitemssold as sold, dai.totalsales as revenue
           FROM dailyitemanalytics dai
@@ -96,6 +100,7 @@ class ReportRepository:
         "companyName": companyName,
         "branchName": branchName,
         "dailyanalytics": dailyResults,
+        "expensesRecord": expensesResults,
         "dailyItemsAnalytics": itemResults,
         "transactionData": transactionData,
       }
