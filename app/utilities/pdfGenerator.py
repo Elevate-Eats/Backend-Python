@@ -22,6 +22,24 @@ class PDFGenerator:
       branchName = data["branchName"]
       dailyResults = data["dailyanalytics"][0] if data["dailyanalytics"] else None
       expensesData = data["expensesRecord"]
+      hourlyData = data["hourlyanalytics"]
+      if not hourlyData:
+          raise ValueError("No hourly analytics data available")
+      
+      # Mapping 24-hour format to "8a" or "14p" format
+      hourLabels = {str(i): f"{i}a" if i < 12 else f"{i-12}p" if i != 12 else "12p" for i in range(8, 22)}
+      # Initialize all transaction counts to 0 for the range 8 AM to 9 PM
+      TransactionsByHour = {hourLabels[str(i)]: 0 for i in range(8, 22)}
+
+      # Fill the data received
+      for entry in hourlyData:
+          hour = entry['datetime'].strftime('%H')  # Convert datetime to hour string
+          formatted_hour = hourLabels.get(hour)
+          if formatted_hour:
+              TransactionsByHour[formatted_hour] += entry['numberoftransactions']
+      hoursOfTransactions = list(TransactionsByHour.keys())
+      transactionsByHour = list(TransactionsByHour.values())
+      logging.info(f'${hoursOfTransactions}, {transactionsByHour}')
       if not dailyResults:
         raise ValueError("No daily analytics data available")
       date = dailyResults['date'].isoformat() if isinstance(dailyResults['date'], datetime) else dailyResults['date']
@@ -96,8 +114,32 @@ class PDFGenerator:
       ]))
       elements.append(summary_table)
       elements.append(Spacer(1, 24))
+      
+      elements.append(Paragraph(f"Hourly Performance Chart", header_style))
+      # chart_image = Image(chart_buffer, width=6*inch, height=0.5*inch * len(itemsData))
+      # elements.append(chart_image)
+      #Hourly chart
+      hours = hoursOfTransactions
+      values = transactionsByHour
+      # Hourly Performance Chart
+      fig, ax = plt.subplots()
+      ax.bar(hoursOfTransactions, transactionsByHour, color='blue')
+      ax.set_ylabel('Number of Transactions')
+      ax.set_title('Hourly Transactions Performance')
+      ax.set_xticks(hoursOfTransactions)
+      ax.set_xticklabels(hoursOfTransactions, rotation=45)
 
+      chart_buffer = io.BytesIO()
+      plt.tight_layout()
+      plt.savefig(chart_buffer, format='png', dpi=150)
+      plt.close(fig)
+      chart_buffer.seek(0)
+
+      chart_image = Image(chart_buffer, width=6*inch, height=3*inch)  # Adjusted size as needed
+      elements.append(chart_image)
+      elements.append(PageBreak())
       elements.append(Paragraph(f"Item Performance Chart", header_style))
+      
       # Chart
       chart_buffer = io.BytesIO()
       fig, ax = plt.subplots(figsize=(6, 0.5 * len(itemsData)))

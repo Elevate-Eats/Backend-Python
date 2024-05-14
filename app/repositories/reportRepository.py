@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from dotenv import load_dotenv
 import asyncpg
 import logging
@@ -36,25 +36,40 @@ class ReportRepository:
     try:
       await self.connect()
       naive_datetime = datetime.fromisoformat(date[:-1])
-      # logging.info(f"Fetching data for Branch ID: {branchId} on Date: {date}")
+      logging.info(f"Fetching data for Branch ID: {branchId} on Date: {date}")
       timezone = pytz.timezone("Asia/Jakarta") 
       aware_datetime = naive_datetime.replace(tzinfo=pytz.utc).astimezone(timezone)
       date_only = aware_datetime.date()  
+      #date for summary
+      # Create UTC datetime for 17:00:00 UTC
+      startOfDay = datetime.combine(aware_datetime.date(), time(0, 0, 0), tzinfo=timezone)
+      endOfDay = startOfDay + timedelta(days=1)
+      startOfDay2 = datetime.combine(aware_datetime.date(), time(0, 0, 0), tzinfo=pytz.utc)
+      endOfDay2 = startOfDay2 + timedelta(days=1)
       companyQuery = """
           SELECT c.name FROM branches b
           JOIN companies c ON b.companyid = c.id
           WHERE b.id = $1
           """
+      logging.info(f"Fetching data for Branch ID: {branchId} on Date: {endOfDay}")
       companyName = await self.connection.fetchval(companyQuery, branchId)
       # logging.info(f"Company Name: {companyName}")
 
       branchNameQuery = "SELECT name from branches where id = $1"
       branchName = await self.connection.fetchval(branchNameQuery, branchId)
       # logging.info(f"Branch Name: {branchName}")
-
-      dailyAnalyticsQuery = "SELECT * FROM dailyanalytics WHERE branchid = $1 AND date = $2"
-      dailyResults = await self.connection.fetch(dailyAnalyticsQuery, branchId, date_only)
-      # logging.info(f"Daily Analytics Results: {dailyResults}")
+      #fetch hourly
+      hourlyAnalyticsQuery = "SELECT * FROM hourlyanalytics WHERE branchid = $1 AND datetime >= $2 AND datetime <= $3"
+      hourlyResults = await self.connection.fetch(hourlyAnalyticsQuery, branchId, startOfDay2, endOfDay2)
+      logging.info(f"Hourly: {hourlyResults}")
+      #fetch daily
+      dailyAnalyticsQuery = """
+          SELECT * FROM dailyanalytics 
+          WHERE branchid = $1 AND date >= $2 AND date <= $3
+      """      
+      dailyResults = await self.connection.fetch(dailyAnalyticsQuery, branchId, startOfDay, endOfDay)
+      logging.info(f"Daily Analytics Results: {dailyResults}")
+      
       # Fetch Daily Expenses
       dailyExpensesQuery = "Select * FROM expenses where branchid = $1 AND date = $2"
       expensesResults = await self.connection.fetch(dailyExpensesQuery, branchId, date_only)
@@ -99,6 +114,7 @@ class ReportRepository:
       return {
         "companyName": companyName,
         "branchName": branchName,
+        "hourlyanalytics": hourlyResults,
         "dailyanalytics": dailyResults,
         "expensesRecord": expensesResults,
         "dailyItemsAnalytics": itemResults,

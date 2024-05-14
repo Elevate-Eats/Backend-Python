@@ -30,3 +30,12 @@ async def generateDailyReport(branchId: int, date: str, reportService: ReportSer
     return StreamingResponse(io.BytesIO(result), media_type="application/pdf")
   except Exception as e:
     raise HTTPException(status_code=500, detail=str(e))
+
+# @router.post("/predict-daily-analytics", dependendencies = [Depends(verifyApiKey)], response_class= Response, reponses = {
+#   200: {
+#     "description": "Returns the prediction of today's transaction number and revenue"
+#   }
+#     500: {
+#     "description": "Internal Server Error"
+#   }
+# })
