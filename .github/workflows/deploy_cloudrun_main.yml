@@ -40,6 +40,7 @@ jobs:
       run: |
         DATE_TAG=$(date +'%Y.%m.%d-%H.%M.%S')-main
         docker build \
+          -f Dockerfile.stable \
           -t asia-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/reportservice:main \
           -t asia-east1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/reportservice:$DATE_TAG \
           --push .
