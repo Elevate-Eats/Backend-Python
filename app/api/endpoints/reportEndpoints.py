@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, Header
 from app.services.reportService import ReportService as ReportServiceClass
 from fastapi.responses import StreamingResponse
+from app.services.mlService import MLService as MLServiceClass
+from fastapi.responses import JSONResponse
 import io
 import os
 from dotenv import load_dotenv
@@ -31,11 +33,21 @@ async def generateDailyReport(branchId: int, date: str, reportService: ReportSer
   except Exception as e:
     raise HTTPException(status_code=500, detail=str(e))
 
-# @router.post("/predict-daily-analytics", dependendencies = [Depends(verifyApiKey)], response_class= Response, reponses = {
-#   200: {
-#     "description": "Returns the prediction of today's transaction number and revenue"
-#   }
-#     500: {
-#     "description": "Internal Server Error"
-#   }
-# })
+def get_ml_service():
+    return MLServiceClass()
+
+@router.post("/predict-transaction", dependencies=[Depends(verifyApiKey)], response_class=JSONResponse, responses={
+    200: {
+        "description": "Returns Prediction of Transaction Number as an Array of JSON",
+        "content": {"application/json": {}}
+    },
+    500: {
+        "description": "Internal Server Error"
+    }
+})
+async def predict_transaction(branchId: int, startDate: str, endDate: str, mlService: MLServiceClass = Depends(get_ml_service)):
+    try:
+        predictionData = await mlService.generateTransactionPrediction(branchId, startDate, endDate)
+        return JSONResponse(content=predictionData)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -9,3 +9,4 @@ class ReportService:
     reportData = await self.reportRepository.getDailyReportData(branchId, date)
     pdfFile = await PDFGenerator.createPdf(reportData)
     return pdfFile
+  
