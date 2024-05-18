@@ -5,7 +5,7 @@ WORKDIR /usr/src/reportGenerator-api
 COPY . .
 
 RUN apk add --no-cache postgresql-libs && \
-    apk add --no-cache --virtual .build-deps gcc musl-dev postgresql-dev cargo rust cmake && \
+    apk add --no-cache --virtual .build-deps gcc g++ musl-dev make postgresql-dev cargo rust cmake && \
     pip install --no-cache-dir -r req.txt && \
     apk --purge del .build-deps
 
