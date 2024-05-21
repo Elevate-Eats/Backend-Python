@@ -8,17 +8,16 @@ class prediction:
   @staticmethod
   async def predictTransaction(datafixForecastHelper1:pd.DataFrame, datafixForecastHelper2:pd.DataFrame, datafixForecastShift1:pd.DataFrame, datafixForecastShift2:pd.DataFrame):
     # datafix = pd.read_csv('/content/drive/MyDrive/ML Balibul/Dataset Qasir/Solo/datafix_2020-2024-sol_with_prev_week.csv')
-    logging.info(f"after repo: {datafixForecastHelper2}")
-    logging.info(f"after repo: {datafixForecastShift1}")
+
     datafixForecastHelper1.rename(columns={"Jumlah_Transaksi":"Jumlah Transaksi"},inplace=True)
     datafixForecastHelper2.rename(columns={"Jumlah_Transaksi":"Jumlah Transaksi"},inplace=True)
     datafixForecastShift1.rename(columns={"Jumlah_Transaksi":"Jumlah Transaksi"},inplace=True)
     datafixForecastShift2.rename(columns={"Jumlah_Transaksi":"Jumlah Transaksi"},inplace=True)
-    logging.info(f"after rename: {datafixForecastHelper2}")
-    logging.info(f"after rename: {datafixForecastShift1}")    
-    model1Path: str = "./model/XGBRegressor-Forecast-city_code=sol-forecast_year=2024-forecast_month=5-param_col=['Months','Days','Prev_Week_Transactions','Holiday','Weekend','Ramadhan']-shift=1.json"
-    model2Path: str = "./model/XGBRegressor-Forecast-city_code=sol-forecast_year=2024-forecast_month=5-param_col=['Months','Days','Prev_Week_Transactions','Holiday','Weekend','Ramadhan']-shift=2.json"
 
+    model1Path: str = "./model/sol-shift1.json"
+    model2Path: str = "./model/sol-shift2.json"
+    param = ["Months", "Days", "Prev_Week_Transactions", "Holiday", "Weekend", "Ramadhan"]
+    pred = ["Jumlah Transaksi", "Total"]
     model1 = XGBRegressor()
     model2 = XGBRegressor()
 
@@ -50,12 +49,13 @@ class prediction:
 
       # Set Result of Prev Week Tranc
       datafixForecastShift1.loc[idx, 'Prev_Week_Transactions'] = total_tranc
-
       # Predict Jumlah Transaksi
-      pred_res_shift1 = model1.predict(datafixForecastShift1[idx:idx + 1][['Months','Days','Prev_Week_Transactions','Holiday','Weekend','Ramadhan']])
+      jmlTrPred, totalPred = model1.predict(
+          datafixForecastShift1[idx : idx + 1][param]
+      ).flatten()
+      datafixForecastShift1.loc[idx, "Jumlah Transaksi"] = round(jmlTrPred)
+      datafixForecastShift1.loc[idx, "Total"] = round(totalPred)
 
-      # Set Result to Forecast Data
-      datafixForecastShift1.loc[idx, 'Jumlah Transaksi'] = round(pred_res_shift1.flatten()[0])
     for idx in range(len(datafixForecastShift2)):
       # Combine Data of Helper and Forecast
       dataPastForecast = pd.concat(
@@ -83,13 +83,11 @@ class prediction:
       datafixForecastShift2.loc[idx, 'Prev_Week_Transactions'] = total_tranc
 
       # Predict Jumlah Transaksi
-      pred_res_shift2 = model2.predict(datafixForecastShift2[idx:idx + 1][['Months','Days','Prev_Week_Transactions','Holiday','Weekend','Ramadhan']])
-
-      # Set Result to Forecast Data
-      datafixForecastShift2.loc[idx, 'Jumlah Transaksi'] = round(pred_res_shift2.flatten()[0])
-    logging.info(f"RETURNNYAAAA: {datafixForecastShift1}")
-    logging.info(f"RETURNNYAAAA: {datafixForecastShift2}")
-
+      jmlTrPred, totalPred = model1.predict(
+          datafixForecastShift2[idx : idx + 1][param]
+      ).flatten()
+      datafixForecastShift2.loc[idx, "Jumlah Transaksi"] = round(jmlTrPred)
+      datafixForecastShift2.loc[idx, "Total"] = round(totalPred)
     datafixForecast = pd.concat(
         [
             datafixForecastShift1,
@@ -98,7 +96,6 @@ class prediction:
         ignore_index=True
     ).reset_index(drop=True)
     datafixForecast['Tanggal'] = datafixForecast['Tanggal'].dt.strftime('%Y-%m-%d')
-    logging.info(f"RETURNNYAAAA: {datafixForecast}")
     return datafixForecast.to_dict(orient='records')
     
       

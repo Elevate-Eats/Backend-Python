@@ -55,9 +55,10 @@ class MLRepository:
             WHEN extract(hour from datetime) BETWEEN 14 AND 22 THEN 2
             ELSE 0
           END as shift,
-          sum(numberoftransactions) as jumlah_transaksi
+          sum(numberoftransactions) as jumlah_transaksi,
+          sum(totalsales) as total
         FROM
-          hourlyanalytics
+          hourlyanalytics 
         WHERE
           date(datetime) BETWEEN $1 AND $2 AND
           branchid = $3 AND
@@ -71,10 +72,11 @@ class MLRepository:
     print(transactionDataRaw)
     await self.close()
 
-    df_raw = pd.DataFrame(transactionDataRaw, columns=['Tanggal', 'Shift', 'Jumlah_Transaksi'])
-    df_raw = pd.DataFrame(transactionDataRaw, columns=['Tanggal', 'Shift', 'Jumlah_Transaksi'])
+    df_raw = pd.DataFrame(transactionDataRaw, columns=['Tanggal', 'Shift', 'Jumlah_Transaksi', 'Total'])
     df_raw['Tanggal'] = pd.to_datetime(df_raw['Tanggal'])
     df_raw['Prev_Week_Transactions'] = 0
+    desired_order = ['Tanggal', 'Shift', 'Jumlah_Transaksi', 'Prev_Week_Transactions', 'Total']
+    df_raw = df_raw[desired_order]
     date_range_for_calculation = pd.date_range(start=twoWeeksBeforeStartDate + timedelta(days=7), end=queryDate, freq='D')
     for date in date_range_for_calculation:
         for shift in [1, 2]:
@@ -95,7 +97,8 @@ class MLRepository:
                     'Tanggal': [date.date()],
                     'Shift': [shift],
                     'Jumlah_Transaksi': [0],
-                    'Prev_Week_Transactions': [0]
+                    'Prev_Week_Transactions': [0],
+                    'Total': [0],
                 })
                 final_df = pd.concat([final_df, new_row], ignore_index=True)
 
