@@ -26,7 +26,7 @@ def add_footer(canvas, doc):
     
     # Footer Text Settings
     canvas.saveState()
-    canvas.setFont('Helvetica', 9)
+    canvas.setFont('Montserrat-Regular', 9)
     canvas.drawCentredString(page_width / 2.0, 15, footer_text)
     canvas.restoreState()
     
