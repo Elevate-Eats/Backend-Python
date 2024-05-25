@@ -140,7 +140,7 @@ class PDFGenerator:
           pagesize=letter,
           rightMargin=36,
           leftMargin=36,
-          topMargin=72,
+          topMargin=100,
           bottomMargin=36,
       )
       doc.companyName = companyName
