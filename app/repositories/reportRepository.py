@@ -35,8 +35,7 @@ class ReportRepository:
   async def getDailyReportData(self, branchId:int, date:str):
     try:
       await self.connect()
-      naive_datetime = datetime.fromisoformat(date[:-1])
-      logging.info(f"Fetching data for Branch ID: {branchId} on Date: {date}")
+      naive_datetime = datetime.fromisoformat(date)
       timezone = pytz.timezone("Asia/Jakarta") 
       aware_datetime = naive_datetime.replace(tzinfo=pytz.utc).astimezone(timezone)
       date_only = aware_datetime.date()  

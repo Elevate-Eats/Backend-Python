@@ -10,8 +10,71 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 import logging
+from reportlab.lib.units import mm
+from reportlab.lib.colors import HexColor
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def add_footer(canvas, doc):
+    # Get the width and height of the document
+    page_width = doc.pagesize[0]
+    page_height = doc.pagesize[1]
+
+    # Footer Text Setup
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    footer_text = f"Page {doc.page} - Printed on {current_date}"
+    
+    # Footer Text Settings
+    canvas.saveState()
+    canvas.setFont('Helvetica', 9)
+    canvas.drawCentredString(page_width / 2.0, 15, footer_text)
+    canvas.restoreState()
+    
+def add_header(canvas, doc):
+    # Load and set up the app logo
+    base_path = os.path.dirname(__file__)
+    app_logo_path = os.path.join(base_path, '../../static/image/Logo.png')
+    app_logo = Image(app_logo_path, width=100, height=50)
+    
+    # Define styles inside the function
+    styles = getSampleStyleSheet()
+    title_style = styles['Title']
+    header_style = styles['Heading2']
+    subheader_style = styles['BodyText']
+
+    # Modify the existing styles or create new ones
+    title_style.fontName = 'Montserrat-Bold'
+    title_style.fontSize = 18
+    title_style.leading = 22
+    title_style.alignment = TA_CENTER
+    header_style.fontName = 'Montserrat-Bold'
+    header_style.fontSize = 12
+    header_style.leading = 14
+    header_style.alignment = TA_CENTER
+    subheader_style.fontName = 'Montserrat-Regular'
+    subheader_style.fontSize = 11
+    subheader_style.leading = 13
+    subheader_style.alignment = TA_RIGHT
+
+    # Prepare the header text using Paragraphs
+    title_text = Paragraph(f"{doc.companyName.upper()}", title_style)
+    header_text = Paragraph(f"Daily Report<br/>{doc.branchName} Branch", header_style)
+    subheader_text = Paragraph(f"Date: {doc.date.strftime('%Y-%m-%d')}", subheader_style)
+
+    # Construct a table for layout
+    header_data = [[app_logo, title_text, header_text, subheader_text]]
+    header_table = Table(header_data, colWidths=[100, None, None, None], rowHeights=50)
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (1, 0), (-1, -1), 10)
+    ]))
+
+    header_table.wrap(doc.width, doc.topMargin)
+    header_table.drawOn(canvas, doc.leftMargin, doc.height + doc.topMargin - 50)
+
+def add_header_and_footer(canvas, doc):
+    add_header(canvas, doc)
+    add_footer(canvas, doc)
 
 class PDFGenerator:
   @staticmethod
@@ -55,7 +118,7 @@ class PDFGenerator:
         'app/utilities/fonts/Montserrat-Bold.ttf',
         'app/utilities/fonts/Montserrat-SemiBold.ttf'
       ]
-
+      custom_color = HexColor("#103164")
       # Check if all font files exist
       for font_path in font_paths:
         if not os.path.isfile(font_path):
@@ -64,68 +127,75 @@ class PDFGenerator:
           logging.info(f"Font file exists: {font_path}")
       # Document setup
       buffer = io.BytesIO()
-      doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
-      elements = []
-
+      styles = getSampleStyleSheet()
+      
       # Custom styles
       pdfmetrics.registerFont(TTFont('Montserrat-Regular', 'app/utilities/fonts/Montserrat-Regular.ttf'))
       pdfmetrics.registerFont(TTFont('Montserrat-Bold', 'app/utilities/fonts/Montserrat-Bold.ttf'))
       pdfmetrics.registerFont(TTFont('Montserrat-SemiBold', 'app/utilities/fonts/Montserrat-SemiBold.ttf'))
-      # Custom styles
-      styles = getSampleStyleSheet()
+      
+      
+      doc = SimpleDocTemplate(
+          buffer,
+          pagesize=letter,
+          rightMargin=36,
+          leftMargin=36,
+          topMargin=72,
+          bottomMargin=36,
+      )
+      doc.companyName = companyName
+      doc.branchName = branchName
+      doc.date = datetime.now()
+      doc.title_style = ParagraphStyle('Title', parent=styles['Normal'], fontName='Montserrat-Bold', fontSize=18, leading=22, alignment=TA_CENTER, spaceAfter=12)
+      doc.header_style = ParagraphStyle('Header', parent=styles['Normal'], fontName='Montserrat-SemiBold', fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=12)
+      doc.subheader_style = ParagraphStyle('Subheader', parent=styles['Normal'], fontName='Montserrat-Regular', fontSize=11, leading=13, alignment=TA_RIGHT)
+      elements = []
       title_style = ParagraphStyle('Title', parent=styles['Normal'], fontName='Montserrat-Bold', fontSize=18, leading=22, alignment=TA_CENTER, spaceAfter=12)
       header_style = ParagraphStyle('Header', parent=styles['Normal'], fontName='Montserrat-SemiBold', fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=12)
       subheader_style = ParagraphStyle('Subheader', parent=styles['Normal'], fontName='Montserrat-Regular', fontSize=11, leading=13, alignment=TA_RIGHT)
-
       # Title and Headers
-      elements.append(Paragraph(companyName.upper(), title_style))
-      elements.append(Paragraph(f"Daily Report - {branchName}", header_style))
-      elements.append(Paragraph(f"Date: {date}", subheader_style))
-      
       elements.append(Spacer(1, 24))
       elements.append(Paragraph(f"Daily Summary", header_style))
       # Summary Table
       summary_data = [["Total Transactions", "Total Items Sold"], [totalTransactions, totalItemsSold]]
       summary_table = Table(summary_data, colWidths=[2.2*inch, 2.2*inch, 2.2*inch], hAlign='CENTER',)
       summary_table.setStyle(TableStyle([
-          ('BACKGROUND', (0, 0), (-1, 0), colors.navy),
+          ('BACKGROUND', (0, 0), (-1, 0), custom_color),
           ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
           ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
           ('FONTNAME', (0, 0), (-1, 0), 'Montserrat-Bold'),
           ('FONTSIZE', (0, 0), (-1, -1), 11),
           ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-          ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+          ('BACKGROUND', (0, 1), (-1, -1), colors.white),
           ('GRID', (0, 0), (-1, -1), 1, colors.black),
       ]))
       elements.append(summary_table)
       elements.append(Spacer(1, 24))
       # Revenue Table
-      summary_data = [["Expenses (IDR)", "Gross Revenue (IDR)", "Total Revenue (IDR)"], [f"{totalExpenses:,.0f}", f"{grossRevenue:,.0f}", f"{totalRevenue:,.0f}"]]
+      summary_data = [["Expenses (IDR)", "Gross Revenue (IDR)", "Net Revenue (IDR)"], [f"{totalExpenses:,.0f}", f"{grossRevenue:,.0f}", f"{totalRevenue:,.0f}"]]
       summary_table = Table(summary_data, colWidths=[2.2*inch, 2.2*inch, 2.2*inch], hAlign='CENTER',)
       summary_table.setStyle(TableStyle([
-          ('BACKGROUND', (0, 0), (-1, 0), colors.navy),
+          ('BACKGROUND', (0, 0), (-1, 0), custom_color),
           ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
           ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
           ('FONTNAME', (0, 0), (-1, 0), 'Montserrat-Bold'),
           ('FONTSIZE', (0, 0), (-1, -1), 11),
           ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-          ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+          ('BACKGROUND', (0, 1), (-1, -1), colors.white),
           ('GRID', (0, 0), (-1, -1), 1, colors.black),
       ]))
       elements.append(summary_table)
       elements.append(Spacer(1, 24))
       
       elements.append(Paragraph(f"Hourly Performance Chart", header_style))
-      # chart_image = Image(chart_buffer, width=6*inch, height=0.5*inch * len(itemsData))
-      # elements.append(chart_image)
+
       #Hourly chart
       hours = hoursOfTransactions
       values = transactionsByHour
       # Hourly Performance Chart
       fig, ax = plt.subplots()
-      ax.bar(hoursOfTransactions, transactionsByHour, color='blue')
+      ax.bar(hoursOfTransactions, transactionsByHour, color='#72B2C9')
       ax.set_ylabel('Number of Transactions')
-      ax.set_title('Hourly Transactions Performance')
       ax.set_xticks(hoursOfTransactions)
       ax.set_xticklabels(hoursOfTransactions, rotation=45)
 
@@ -143,11 +213,10 @@ class PDFGenerator:
       # Chart
       chart_buffer = io.BytesIO()
       fig, ax = plt.subplots(figsize=(6, 0.5 * len(itemsData)))
-      ax.barh([item['name'] for item in itemsData], [item['sold'] for item in itemsData], color='skyblue')
+      ax.barh([item['name'] for item in itemsData], [item['sold'] for item in itemsData], color='#72B2C9')
       plt.xlabel('Quantity Sold', fontsize=9)
       plt.xticks(fontsize=8)
       plt.yticks(fontsize=8)
-      ax.set_title('Sales Per Item Today', fontsize=10)
       plt.tight_layout()
       plt.savefig(chart_buffer, format='png', dpi=150)
       plt.close(fig)
@@ -157,10 +226,6 @@ class PDFGenerator:
       elements.append(chart_image)
       elements.append(PageBreak())
 
-      # Repeat headers on new page for consistency
-      elements.append(Paragraph(companyName.upper(), title_style))
-      elements.append(Paragraph(f"Daily Report - {branchName}", header_style))
-      elements.append(Paragraph(f"Date: {date}", subheader_style))
       elements.append(Spacer(1, 24))
 
       # Detailed items table with improved style
@@ -185,14 +250,14 @@ class PDFGenerator:
 
       )
       detailed_item_table.setStyle(TableStyle([
-          ('BACKGROUND', (0, 0), (-1, 0), colors.navy),
+          ('BACKGROUND', (0, 0), (-1, 0), custom_color),
           ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
           ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
           ('FONTNAME', (0, 0), (-1, 0), 'Montserrat-Bold'),
           ('FONTNAME', (0, 1), (-1, -1), 'Montserrat-SemiBold'),
           ('FONTSIZE', (0, 0), (-1, -1), 10),
           ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-          ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+          ('BACKGROUND', (0, 1), (-1, -1), colors.white),
           ('BOX', (0, 0), (-1, -1), 1, colors.black),
           ('INNERGRID', (0, 0), (-1, -1), 1, colors.black),
           ('BACKGROUND', (0, bottom_row_index), (-1, bottom_row_index), colors.lightblue),
@@ -200,16 +265,18 @@ class PDFGenerator:
       elements.append(Paragraph(f"Daily Items Table", header_style))
       elements.append(detailed_item_table)
       elements.append(PageBreak())
-      # Repeat headers on new page for consistency
-      elements.append(Paragraph(companyName.upper(), title_style))
-      elements.append(Paragraph(f"Daily Report - {branchName}", header_style))
-      elements.append(Paragraph(f"Date: {date}", subheader_style))
       elements.append(Spacer(1, 24))
       transactions_data_for_table = [
-        ['Time', 'Customer Name','Payment Method', 'Discount', 'Total'],  # Adding column headers here
-        ] + [
-        [transaction['time'], transaction['customerName'],transaction['paymentMethod'], transaction['discount'], f"{transaction['total']:,.2f}"] for transaction in transactionsData
-        ]
+          ['Time', 'Customer Name', 'Payment Method', 'Discount', 'Total'],  # Column headers
+      ] + [
+          [
+              transaction['time'],
+              transaction['customerName'][:10],  # Slice to the first 10 characters
+              'Cash' if transaction['paymentMethod'] == '0'  else 'Transfer',
+              f"{transaction['discount']:,.2f}" if transaction['discount'] is not None else '0.00',
+              f"{transaction['total']:,.2f}"
+          ] for transaction in transactionsData
+      ]
       # Calculate the totals for Discount and Total columns, treating None as 0
       total_discount = sum(transaction['discount'] if transaction['discount'] is not None else 0 for transaction in transactionsData)
       total_amount = sum(transaction['total'] if transaction['total'] is not None else 0 for transaction in transactionsData)
@@ -232,14 +299,14 @@ class PDFGenerator:
 
       # Define the table style, including custom styling for the total row
       detailed_transaction_table.setStyle(TableStyle([
-          ('BACKGROUND', (0, 0), (-1, 0), colors.navy),
-          ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+          ('BACKGROUND', (0, 0), (-1, 0), custom_color),
+          ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
           ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
           ('FONTNAME', (0, 0), (-1, 0), 'Montserrat-Bold'),
           ('FONTNAME', (0, 1), (-1, -1), 'Montserrat-SemiBold'),
           ('FONTSIZE', (0, 0), (-1, -1), 10),
           ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-          ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+          ('BACKGROUND', (0, 1), (-1, -1), colors.white),
           ('BOX', (0, 0), (-1, -1), 1, colors.black),
           ('INNERGRID', (0, 0), (-1, -1), 1, colors.black),
           # Custom background color for the total row
@@ -248,10 +315,6 @@ class PDFGenerator:
       elements.append(Paragraph(f"Daily Transactions Table", header_style))
       elements.append(detailed_transaction_table)
       elements.append(PageBreak())
-      # Repeat headers on new page for consistency
-      elements.append(Paragraph(companyName.upper(), title_style))
-      elements.append(Paragraph(f"Daily Report - {branchName}", header_style))
-      elements.append(Paragraph(f"Date: {date}", subheader_style))
       elements.append(Spacer(1, 24))
       expenses_data_for_table = [
         ['Name', 'Count','Price', 'Total'],  # Adding column headers here
@@ -263,7 +326,7 @@ class PDFGenerator:
       ])
       detailed_expenses_table = Table(
           expenses_data_for_table,
-          colWidths=[1.2*inch, 1.5*inch, 1.5*inch, 1.5*inch],
+          colWidths=[3*inch, 1.5*inch, 1.5*inch, 1.5*inch],
           hAlign='CENTER',
           repeatRows=1  # Repeat headers on each new page
       )
@@ -273,14 +336,14 @@ class PDFGenerator:
 
       # Apply the style, mirroring the style used for the transaction table
       detailed_expenses_table.setStyle(TableStyle([
-          ('BACKGROUND', (0, 0), (-1, 0), colors.navy),
-          ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+          ('BACKGROUND', (0, 0), (-1, 0), custom_color),
+          ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
           ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
           ('FONTNAME', (0, 0), (-1, 0), 'Montserrat-Bold'),
           ('FONTNAME', (0, 1), (-1, -1), 'Montserrat-SemiBold'),
           ('FONTSIZE', (0, 0), (-1, -1), 10),
           ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-          ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+          ('BACKGROUND', (0, 1), (-1, -1), colors.white),
           ('BOX', (0, 0), (-1, -1), 1, colors.black),
           ('INNERGRID', (0, 0), (-1, -1), 1, colors.black),
           # Custom background color for the total row
@@ -290,7 +353,7 @@ class PDFGenerator:
       elements.append(Paragraph(f"Daily Expenses Table", header_style))
       elements.append(detailed_expenses_table)
       # Build the PDF and return the binary data
-      doc.build(elements) 
+      doc.build(elements, onFirstPage=add_header_and_footer, onLaterPages=add_header_and_footer)
       pdf_value = buffer.getvalue()
       buffer.close()
       return pdf_value

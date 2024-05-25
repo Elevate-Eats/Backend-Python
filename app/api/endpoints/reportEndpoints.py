@@ -6,6 +6,8 @@ from fastapi.responses import JSONResponse
 import io
 import os
 from dotenv import load_dotenv
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 load_dotenv()
 
@@ -28,6 +30,7 @@ def get_report_service():
 })
 async def generateDailyReport(branchId: int, date: str, reportService: ReportServiceClass = Depends(get_report_service)):
   try:
+    logging.info(f"data req: {branchId}, {date}")
     result = await reportService.generateDailyReport(branchId, date)
     return StreamingResponse(io.BytesIO(result), media_type="application/pdf")
   except Exception as e:
