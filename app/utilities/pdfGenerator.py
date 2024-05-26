@@ -222,7 +222,7 @@ class PDFGenerator:
       plt.close(fig)
       chart_buffer.seek(0)
 
-      chart_image = Image(chart_buffer, width=6*inch, height=0.5*inch * len(itemsData))
+      chart_image = Image(chart_buffer, width=6*inch, height=0.3*inch * len(itemsData))
       elements.append(chart_image)
       elements.append(PageBreak())
 
