@@ -124,10 +124,10 @@ class MLRepository:
     df_helper2 = df_helper[df_helper['Shift']==2].reset_index(drop=True)
     df_predict1 = df_predict[df_predict['Shift']==1].reset_index(drop=True)
     df_predict2 = df_predict[df_predict['Shift']==2].reset_index(drop=True)
-    logging.info(f"DFDF: {df_helper1}")
-    logging.info(f"DFDF: {df_helper2}")
-    logging.info(f"DFDF: {df_predict1}")
-    logging.info(f"DFDF: {df_predict2}")
+    # logging.info(f"DFDF: {df_helper1}")
+    # logging.info(f"DFDF: {df_helper2}")
+    # logging.info(f"DFDF: {df_predict1}")
+    # logging.info(f"DFDF: {df_predict2}")
 
     return df_helper1, df_helper2, df_predict1, df_predict2
   

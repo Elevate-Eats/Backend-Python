@@ -50,7 +50,7 @@ class ReportRepository:
           JOIN companies c ON b.companyid = c.id
           WHERE b.id = $1
           """
-      logging.info(f"Fetching data for Branch ID: {branchId} on Date: {endOfDay}")
+      #logging.info(f"Fetching data for Branch ID: {branchId} on Date: {endOfDay}")
       companyName = await self.connection.fetchval(companyQuery, branchId)
       # logging.info(f"Company Name: {companyName}")
 
@@ -60,14 +60,14 @@ class ReportRepository:
       #fetch hourly
       hourlyAnalyticsQuery = "SELECT * FROM hourlyanalytics WHERE branchid = $1 AND datetime >= $2 AND datetime <= $3"
       hourlyResults = await self.connection.fetch(hourlyAnalyticsQuery, branchId, startOfDay2, endOfDay2)
-      logging.info(f"Hourly: {hourlyResults}")
+      #logging.info(f"Hourly: {hourlyResults}")
       #fetch daily
       dailyAnalyticsQuery = """
           SELECT * FROM dailyanalytics 
           WHERE branchid = $1 AND date >= $2 AND date <= $3
       """      
       dailyResults = await self.connection.fetch(dailyAnalyticsQuery, branchId, startOfDay, endOfDay)
-      logging.info(f"Daily Analytics Results: {dailyResults}")
+      #logging.info(f"Daily Analytics Results: {dailyResults}")
       
       # Fetch Daily Expenses
       dailyExpensesQuery = "Select * FROM expenses where branchid = $1 AND date = $2"

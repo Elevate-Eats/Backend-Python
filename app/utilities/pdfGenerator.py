@@ -102,7 +102,7 @@ class PDFGenerator:
               TransactionsByHour[formatted_hour] += entry['numberoftransactions']
       hoursOfTransactions = list(TransactionsByHour.keys())
       transactionsByHour = list(TransactionsByHour.values())
-      logging.info(f'${hoursOfTransactions}, {transactionsByHour}')
+      #logging.info(f'${hoursOfTransactions}, {transactionsByHour}')
       if not dailyResults:
         raise ValueError("No daily analytics data available")
       date = dailyResults['date'].isoformat() if isinstance(dailyResults['date'], datetime) else dailyResults['date']
@@ -120,11 +120,11 @@ class PDFGenerator:
       ]
       custom_color = HexColor("#103164")
       # Check if all font files exist
-      for font_path in font_paths:
-        if not os.path.isfile(font_path):
-          logging.error(f"Font file not found: {font_path}")
-        else:
-          logging.info(f"Font file exists: {font_path}")
+      # for font_path in font_paths:
+      #   if not os.path.isfile(font_path):
+      #     logging.error(f"Font file not found: {font_path}")
+      #   else:
+      #     logging.info(f"Font file exists: {font_path}")
       # Document setup
       buffer = io.BytesIO()
       styles = getSampleStyleSheet()

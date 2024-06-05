@@ -30,7 +30,7 @@ def get_report_service():
 })
 async def generateDailyReport(branchId: int, date: str, reportService: ReportServiceClass = Depends(get_report_service)):
   try:
-    logging.info(f"data req: {branchId}, {date}")
+    # logging.info(f"data req: {branchId}, {date}")
     result = await reportService.generateDailyReport(branchId, date)
     return StreamingResponse(io.BytesIO(result), media_type="application/pdf")
   except Exception as e:

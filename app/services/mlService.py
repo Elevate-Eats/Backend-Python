@@ -9,8 +9,8 @@ class MLService:
     
   async def generateTransactionPrediction(self, branchId: int, startDate: str, endDate: str):
     dataFixForecastHelper1, dataFixForecastHelper2, dataFixForecastShift1, dataFixForecastShift2 = await self.mlRepository.fetchData(branchId, startDate, endDate)
-    logging.info(f"after repo: {dataFixForecastShift1}")
-    logging.info(f"after repo: {dataFixForecastHelper2}")
+    #logging.info(f"after repo: {dataFixForecastShift1}")
+    #logging.info(f"after repo: {dataFixForecastHelper2}")
 
     predictionData = await prediction.predictTransaction(dataFixForecastHelper1, dataFixForecastHelper2, dataFixForecastShift1, dataFixForecastShift2)
     return predictionData
