@@ -267,11 +267,12 @@ class PDFGenerator:
       elements.append(PageBreak())
       elements.append(Spacer(1, 24))
       transactions_data_for_table = [
-          ['Time', 'Customer Name', 'Payment Method', 'Discount', 'Total'],  # Column headers
+          ['Time', 'Customer', 'Cashier', 'Method', 'Discount', 'Total'],  # Column headers
       ] + [
           [
               transaction['time'],
               transaction['customerName'][:10],  # Slice to the first 10 characters
+              transaction['cashierName'][:10],  # Slice to the first 10 characters
               'Cash' if transaction['paymentMethod'] == '0'  else 'Transfer',
               f"{transaction['discount']:,.2f}" if transaction['discount'] is not None else '0.00',
               f"{transaction['total']:,.2f}"
@@ -289,7 +290,7 @@ class PDFGenerator:
       # Create the table
       detailed_transaction_table = Table(
           transactions_data_for_table,
-          colWidths=[1.2*inch, 1.5*inch, 1.5*inch, 1.5*inch],
+          colWidths=[1*inch, 1*inch, 1*inch, 1.2*inch, 1.2*inch, 1.2*inch],
           hAlign='CENTER',
           repeatRows=1  
       )

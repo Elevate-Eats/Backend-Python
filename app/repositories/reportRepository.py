@@ -92,14 +92,17 @@ class ReportRepository:
       
       transactionDataQuery ="""
         SELECT
-            to_char(transactiondate, 'HH12:MI PM') as time,
-            totalprice,
-            paymentmethod,
-            customername,
-            discount
-        FROM transactions
-        WHERE branchid = $1 AND date(transactiondate) = $2
-        ORDER BY transactiondate
+            to_char(t.transactiondate, 'HH12:MI PM') as time,
+            t.totalprice,
+            t.paymentmethod,
+            t.customername,
+            t.discount,
+            u.name as cashiername
+        FROM transactions t
+        JOIN users u ON t.cashierid = u.id
+        WHERE t.branchid = $1
+          AND date(t.transactiondate) = $2
+        ORDER BY t.transactiondate;
       """
       transactionDataRaw = await self.connection.fetch(transactionDataQuery, branchId, date_only)
       transactionData = [{
@@ -107,6 +110,7 @@ class ReportRepository:
         'total': float(result['totalprice']),
         'paymentMethod': result['paymentmethod'],
         'customerName': result['customername'],
+        'cashierName': result['cashiername'],
         'discount': float(result['discount']) if result['discount'] else None
       } for result in transactionDataRaw]
       await self.close()
